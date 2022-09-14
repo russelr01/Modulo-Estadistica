@@ -1,0 +1,113 @@
+---
+title: "Entregable2_A01283727"
+author: "Russel Rosique"
+date: "2022-09-07"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#El Problema
+
+La contaminación por mercurio de peces en el agua dulce comestibles es una amenaza directa contra nuestra salud. Se llevó a cabo un estudio reciente en 53 lagos de Florida con el fin de examinar los factores que influían en el nivel de contaminación por mercurio.
+
+```{r}
+df=read.csv("mercurio.csv")
+```
+
+#DESCRIPCION DE LOS DATOS
+| **Columna**              | **Descripción**                                                                                                                                                                                    |
+|--------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| X1              | Número de identificación                  |
+| X2              | Nombre del lago                           |
+| X3              | Alcalinidad                               |
+| X4              | PH                                        |
+| X5              | Calcio (mg/l)                             |
+| X6              | Clorofila (mg/l)                          |
+| X7              | concentración media de mercurio (parte por millón) en el tejido muscualar del grupo de peces estudiados en cada lago   
+                                                              |
+| X8              | Número de peces estudiados en el lago                                                                                      |
+| X9          | mínimo de la concentración de mercurio en cada grupo de peces
+                                                              |
+| X10 | máximo de la concentración de mercurio en cada grupo de peces                                                                          |
+| X11     | estimación (mediante regresión) de la concentración de mercurio en el pez de 3 años (o promedio de mercurio cuando la edad no está disponible)                                                                       |
+| X12     | indicador de la edad de los peces (0: jóvenes; 1: maduros)                                                                         |
+
+#Exploración Variables
+Dado que tenemos un total de 12 columnas, es importante que se realice esta exploración ya que podremos tener un vistazo preliminar sobre la relevancia de cada columna, hacia las respuestas que queremos obtener.
+
+```{r}
+edad_peces = df$X12 
+table(edad_peces)
+```
+
+Se puede observar que la mayoría de los peces estudiados en los lagos son de edad avanzada.
+
+```{r}
+cantidad_peces = df$X8
+table(cantidad_peces)
+```
+
+Por otro lado, se puede observar que hay lagos en los que la muestra de los peces es demasiado pequeña, en varios únicamente se estudió un pez, mientras que en otros lagos se estudiaron cantidades más adecuadas. 
+
+```{r}
+media_mercurio = df$X7
+table(media_mercurio)
+```
+Con este se logra obtener una primera observación del rango de la concentración de mercurio en los peces.
+
+Por último, se ejecuta la siguiente instrucción para verificar que no existan columnas vacías, y podamos proceder con la exploración.
+```{r}
+colSums(is.na(df))
+```
+
+#EXPLORACION
+
+Primero que nada, buscaremos encontrar algunos datos generales sobre nuestra base de datos.
+
+```{r}
+hist(media_mercurio, col='steelblue', main='Concentración de Mercurio', breaks = 12)
+```
+```{r}
+hist(df$X11, col='steelblue', main='Estimación de la concentración en peces de 3 años', breaks = 10)
+```
+
+Se puede observar a partir del histograma que los datos no se encuentran distribuidos de forma normal. Esto se podrá observar con mayor claridad en el siguiente diagrama.
+```{r}
+qqnorm(media_mercurio, main='QQ Plot Media de Concentración de Mercurio')
+qqline(media_mercurio)
+```
+```{r}
+qqnorm(df$X11, main='QQ Plot Estimación de Concentración de Mercurio en el pez de 3 años')
+qqline(df$X11)
+```
+
+Dado lo anterior, se puede observar que no existe normalidad aunque se eliminaran los datos atípicos. 
+
+#SESGO
+A continuación se encontrará la cantidad de sesgo que existe en el conjunto de datos.
+
+```{r}
+library(e1071)
+skewness(media_mercurio)
+```
+
+Dado que tenemos un sesgo positivo, se puede analizar que se tiene un sesgo hacia la izquierda.
+
+#DATOS ATÍPICOS
+Al realizar la exploración de las variables, se pudo observar la posibilidad de datos atípicos en el conjunto de datos. Para verificar esto, se utilizará la herramienta de boxplot.
+
+```{r}
+boxplot(media_mercurio, horizontal = TRUE)
+```
+Tras la visualización del boxplot, se verifica que no existe ningún dato atípico entre los datos.
+
+```{r}
+iqr <- IQR(media_mercurio)
+print(iqr)
+```
+
