@@ -1,0 +1,336 @@
+---
+title: "Entregable Final: Los Peces y el Mercurio"
+author: "Russel Rosique"
+date: "2022-09-07"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+#RESUMEN DEL PROBLEMA
+
+La contaminación por mercurio de peces en el agua dulce comestibles es una amenaza directa contra nuestra salud. Se llevó a cabo un estudio reciente en 53 lagos de Florida con el fin de examinar los factores que influían en el nivel de contaminación por mercurio.
+
+#INTRODUCCIÓN
+
+En el análisis estadístico a continuación, se busca encontrar los factores más influyentes en la concentración de mercurio en los peces de los lagos de Florida. Para ello, se analizarán y contestarán preguntas de investigación relevantes a la situación problema. Se escogieron 3 preguntas en específico que son contestadas a través del reporte:
+
+- ¿Las concentraciones de alcalinidad, calcio y clorofila en el agua del lago influyen en la concentración de mercurio en los peces?
+- ¿Habrá diferencia significativa entre la concentración de mercurio por la edad de los peces?
+- ¿El nivel de PH del lago influye en la cantidad de mercurio en los peces?
+
+```{r}
+df=read.csv("mercurio.csv")
+```
+
+#DESCRIPCION DE LOS DATOS
+| **Columna**              | **Descripción**                                                                                                                                                                                    |
+|--------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| X1              | Número de identificación                  |
+| X2              | Nombre del lago                           |
+| X3              | Alcalinidad                               |
+| X4              | PH                                        |
+| X5              | Calcio (mg/l)                             |
+| X6              | Clorofila (mg/l)                          |
+| X7              | concentración media de mercurio (parte por millón) en el tejido muscualar del grupo de peces estudiados en cada lago   
+                                                              |
+| X8              | Número de peces estudiados en el lago                                                                                      |
+| X9          | mínimo de la concentración de mercurio en cada grupo de peces
+                                                              |
+| X10 | máximo de la concentración de mercurio en cada grupo de peces                                                                          |
+| X11     | estimación (mediante regresión) de la concentración de mercurio en el pez de 3 años (o promedio de mercurio cuando la edad no está disponible)                                                                       |
+| X12     | indicador de la edad de los peces (0: jóvenes; 1: maduros)                                                                         |
+
+#EXPLORACIÓN VARIABLES
+
+Dado que tenemos un total de 12 columnas, es importante que se realice esta exploración ya que podremos tener un vistazo preliminar sobre la relevancia de cada columna, hacia las respuestas que queremos obtener.
+
+```{r}
+edad_peces = df$X12 
+table(edad_peces)
+```
+
+Se puede observar que la mayoría de los peces estudiados en los lagos son de edad avanzada.
+
+```{r}
+cantidad_peces = df$X8
+table(cantidad_peces)
+```
+
+Por otro lado, se puede observar que hay lagos en los que la muestra de los peces es demasiado pequeña, en varios únicamente se estudió un pez, mientras que en otros lagos se estudiaron cantidades más adecuadas. 
+
+```{r}
+media_mercurio = df$X7
+table(media_mercurio)
+```
+Con este se logra obtener una primera observación del rango de la concentración de mercurio en los peces.
+
+Por último, se ejecuta la siguiente instrucción para verificar que no existan columnas vacías, y podamos proceder con la exploración.
+```{r}
+colSums(is.na(df))
+```
+
+#EXPLORACION
+
+Primero que nada, buscaremos encontrar algunos datos generales sobre nuestra base de datos.
+
+```{r}
+hist(media_mercurio, col='steelblue', main='Concentración de Mercurio', breaks = 12)
+```
+
+```{r}
+hist(df$X11, col='steelblue', main='Estimación de la concentración en peces de 3 años', breaks = 10)
+```
+
+Se puede observar a partir del histograma que los datos no se encuentran distribuidos de forma normal. Esto se podrá observar con mayor claridad en el siguiente diagrama.
+
+```{r}
+qqnorm(media_mercurio, main='QQ Plot Media de Concentración de Mercurio')
+qqline(media_mercurio)
+```
+
+```{r}
+qqnorm(df$X11, main='QQ Plot Estimación de Concentración de Mercurio en el pez de 3 años')
+qqline(df$X11)
+```
+
+Dado lo anterior, se puede observar que no existe normalidad aunque se eliminaran los datos atípicos. 
+
+#SESGO
+
+A continuación se encontrará la cantidad de sesgo que existe en el conjunto de datos.
+
+```{r}
+library(e1071)
+skewness(media_mercurio)
+```
+
+Dado que tenemos un sesgo positivo, se puede analizar que se tiene un sesgo hacia la izquierda.
+
+#DATOS ATÍPICOS
+
+Al realizar la exploración de las variables, se pudo observar la posibilidad de datos atípicos en el conjunto de datos. Para verificar esto, se utilizará la herramienta de boxplot.
+
+```{r}
+boxplot(media_mercurio, horizontal = TRUE)
+```
+Tras la visualización del boxplot, se verifica que no existe ningún dato atípico entre los datos.
+
+#CORRELACIÓN DE LOS DATOS
+
+```{r}
+df_numeric = subset(df, select = -c(X2) )
+round(cor(df_numeric), 3)
+```
+
+
+
+#REGRESIÓN LINEAL
+
+Como primera herramienta estadística, se escoge realizar una regresión lineal multiple para contestar la siguiente pregunta de análisis: ¿Las concentraciones de alcalinidad, calcio, clorofila influyen en la cantidad de mercurio en los peces? 
+
+La ejecución de la regresión lineal con las variables mencionadas en la pregunta de análisis, será muy importante para analizar si existe una correlación suficiente para decir si dichos factores influyen en la cantidad de mercurio en los peces, y que tanto influye cada uno.
+
+```{r}
+modelo <- lm(df$X7 ~ df$X3 + df$X5 + df$X6)
+```
+
+
+```{r}
+summary(modelo)
+```
+
+```{r}
+plot(x=df$X3, y=df$X7, main="Alcalinidad - Mercurio")
+```
+
+```{r}
+plot(x=df$X5, y=df$X7, main="Calcio - Mercurio")
+```
+
+```{r}
+plot(x=df$X6, y=df$X7, main="Clorofila - Mercurio")
+```
+
+```{r}
+cor(df$X5, df$X6, method = "pearson")
+```
+
+```{r}
+cor(df$X3, df$X5, method="pearson")
+```
+```{r}
+cor(df$X3, df$X6, method = "pearson")
+```
+
+
+```{r}
+confint(modelo, level = 0.97)
+```
+
+```{r}
+shapiro.test(modelo$residuals)
+```
+
+Tras realizar la regresión lineal con las variables mencionadas anteriormente, se puede analizar que no existe una correlación suficiente entre las medidas de alcalinidad, calcio y clorofila, y la cantidad de mercurio en los peces, para decir con certeza que dichas variables son influyentes. Con el resultado del modelo, obtenemos una r-cuadrada de 0.439, lo que nos permite decir que la alacalinidad, calcio, y clorofila, pueden explicar únicamente alrededor de un 43% de la variación del mercurio en los peces.
+
+Sin embargo, al realizar un análisis a profunidad del modelo, se analiza que se obtiene un valor F de 12.8, con un valor p de 2.6e-06. Esto nos indica que se rechaza la hipótesis de que la pendiente de todas las variables sea 0. Explicado de mejor manera, quiere decir que al menos una de las variables tiene correlación con la cantidad de mercurio en los peces.
+
+Ya que se obtuvo el menor valor p con la variable de Alcalinidad, se decidió modelar una regresión linear simple para evaluar dicho nuevo modelo. 
+
+```{r}
+modelo2 <- lm(df$X7 ~ df$X3)
+summary(modelo2)
+```
+```{r}
+plot(df$X3, df$X7, xlab="Alcalinidad", ylab="Mercurio")
+abline(modelo2, col="red")
+```
+
+```{r}
+shapiro.test(modelo$residuals)
+```
+
+Una vez que se realiza esta regresión lineal simple, se puede notar que sigue existiendo una baja correlación, por lo que se analiza que la recta de mejor ajuste no es un buen modelo para los datos de alcalinidad, calcio y clorofila contra el mercurio en los peces. 
+
+Más aún, al realizar el Shapiro-Wilk normality test a los residuos de los modelos, se vio que los residuos no pasaron la prueba de normalidad para ninguno de los modelos, por lo que se concluye que un modelo de regresión linear no es el modelo correcto para la predicción de estos datos.
+
+#2do ANÁLISIS
+
+Para continuar analizando el conjunto de datos, se decidió utilizar otra herramienta estadística para contestar la siguiente pregunta: ¿Habrá diferencia significativa entre la concentración de mercurio por la edad de los peces?
+
+```{r}
+getError <- function(X, alfa) {
+  n = length(X)
+  media = mean(X) #Igual podriamos utilizar una media hipotesis como miu, en este caso usaremos la misma que la muestra
+  sigma = sd(X)
+  
+  ErrorEst = sigma/sqrt(n)
+  E = abs(qnorm(alfa/2))*ErrorEst
+  return(E)
+}
+
+printLimits <- function(X, alfa) {
+  E <- getError(X, alfa)
+  media <- mean(X)
+    
+  lowerLimit =  media- E
+  upperLimit = media + E
+  
+  print(paste("Intervalo de ", floor((1-alfa)*100),"% de confianza:"))
+  print(paste("Lower Limit: ", (lowerLimit)))
+  print(paste("Average: ", (media)))
+  print(paste("Upper Limit: ", (upperLimit)))
+  return(c(lowerLimit,media,upperLimit))
+}
+
+plotInt <- function(maxIntervals, main_, labels_, xmin, xmax) {
+  plot(0, ylim=c(0,maxIntervals+1), xlim=c(xmin-1,xmax+1),yaxt="n", ylab="", main=main_)
+  axis(2, at=c(1:maxIntervals), labels=labels_)
+}
+
+addInt <- function(info, n) {
+  #Para insertar los intervalos [Ai,Bi], con Ai y Bi son los límites inferior y superior del intervalo i respectivamente:
+  arrows(info[1], n, info[3], n, angle=90, code=3, length = 0.1, lwd = 2)
+  #Para dibujar la media dentro del  intervalo (insertar un punto), donde mi es la media del intervalo i:
+  points(info[2], n, pch=19, cex=1.1)
+}
+```
+
+```{r}
+res <- printLimits(df$X7, 0.01)
+plotInt(1, "Mercurio, 99% confidence" ,c("Mercurio"), min(res),max(res))
+addInt(res, 1)
+```
+Primero generamos este intervalo de confianza al 99%, donde se puede observar el rango que abarca, con un 99% de seguridad, la media de mercurio en los peces. Al generar esto, se obtiene que dicha media se enceuntra entre los límites [0.4065, 0.6478]. Ahora bien, para descubrir si existe diferencia significativa entre la concentración de mercurio por la edad de los peces, se generarán intervalos de confianza como el anterior, separados para los peces jóvenes, y los peces maduros, y se compararán. 
+
+```{r}
+getStats <- function(subset, title) {
+  print(paste(title,':'))
+  print(paste('N datos: ',length(subset),' / ','Range ',max(currEdadMercurio)-min(subset),' / ', 'Variance ',var(subset),' / ', 'STD ',sd(subset)))
+  print(summary(subset))
+  writeLines("\n")
+  printLimits(subset, 0.01)
+  writeLines("\n\n")
+}
+```
+
+
+```{r}
+X<-split(df, df$X12)
+edades = names(X)
+
+jovenes <- X$`0`
+maduros <- X$`1`
+
+plotInt(length(edades),"Intervalo de Confianza para Mercurio en los Peces", c(edades), min(df$X7),max(df$X7))
+
+counter <- 1
+for (edad in edades){
+  currEdad<-X[[edad]]
+  currEdadMercurio = currEdad$X7
+  getStats(currEdadMercurio,paste('Edad ',edad))
+  
+  res <- printLimits(currEdadMercurio, 0.05)
+  addInt(res, counter)
+  counter <- counter + 1
+}
+
+```
+Al generar los diagramas para los respectivos intervalos de confianza, podemos ver de forma visual que se encuentra el intervalo en la media para los peces maduros dentro del intervalo para los peces jóvenes. Aunque abarca un rango más grande el intervalo para los peces jóvenes, se analiza que esto se debe a que la muestra es muy pequeña (únicamente 10 observaciones), mientras que la de peces maduros es de 43 observaciones. De todas formas, se puede ver claramente que la edad de los peces no juega un rol determinante en la concentración de mercurio en los peces. 
+
+Dado que no se ha obtenido la respuesta a la pregunta principal de la investigación: ¿Cuáles son los principales factores que influyen en el nivel de contaminación por mercurio en los peces de los lagos de Florida?, se realiza un análisis con los factores faltantes por analizar (PH, cantidad de peces estudiados)
+
+```{r}
+plot(x=df$X8, y=df$X7, main="Número de Peces - Mercurio")
+```
+```{r}
+cor(df$X8, df$X7, method = "pearson")
+```
+
+Primero se explora la correlación entre el número de peces estudiado y la concentración de mercurio. Para observar de forma gráfica, se realiza un scatter plot, en donde no se alcanza a observar ninguna tendencia. Para confirmar lo visto, se hace una prueba de correlación con el método de pearson, en la cual se obtiene un resultado sumamente bajo, de 0.079. Se puede concluir que en las observaciones realizadas, no existe ninguna influencia de la cantidad de peces en la concetación de mercurio, por lo que no es necesario siquiera probarlo con alguna otra herramienta estadística. 
+
+A continuación se hace lo mismo con las observaciones de PH en los lagos. 
+
+```{r}
+plot(x=df$X4, y=df$X7, main="PH - Mercurio")
+```
+
+```{r}
+cor(df$X4, df$X7, method = "pearson")
+```
+
+Por otra parte, al hacer las mismas pruebas para la columna del PH de los lagos, se encuentra un 0.575 de correlación, y se alcanza a observar en el scatter plot, una ligera tendencia lineal. A partir de estas observaciones, se decide hacer una regresión lineal simple para evaluar el ajuste de la recta para este modelo. 
+
+```{r}
+modelo3 <- lm(df$X7 ~ df$X4)
+summary(modelo3)
+```
+```{r}
+plot(df$X4, df$X7, xlab="PH", ylab="Mercurio")
+abline(modelo3, col="red")
+```
+
+Al realizar la regresión lineal, se logra cierto ajuste sobre los datos, sin embargo, también se observan amplios errores, lo que hace que se obtenga una r-cuadrada de 0.33. A continuación se harán pruebas de normalidad sobre los residuos para definir si el modelo de regresión es válido. 
+
+```{r}
+hist(modelo3$residuals, freq = FALSE)
+lines(density(modelo3$residual),col="red")
+curve(dnorm(x,mean=mean(modelo3$residuals), sd=sd(modelo3$residuals)), from=-0.6, to=0.8, add=TRUE, col="blue",lwd=2)
+```
+Con el histograma se logra observar que existe sesgo hacia la izquierda, por lo que es probable que el modelo de regresión linear no sea válido. De igual forma se realizará el shapiro-test.
+
+```{r}
+shapiro.test(modelo3$residuals)
+```
+Como se esperaba, el modelo falla el shapiro test, lo que indica que el modelo no es válido, y no se debe emplear una regresión linear.
+
+#CONCLUSIÓN
+
+En conclusión, se realizó un análisis estadístico contestando distintas preguntas de investigación, las cuales fueron de apoyo para rechazar hipótesis sobre el conjunto de datos. Sin embargo, el análisis realizado no logra responder la pregunta principal: ¿Que factores influyen más en la concentración de mercurio en los peces? Se puede concluir que no se encontró con certeza un modelo para predecir la concentración de mercurio en los peces, o bien entender el peso de los factores, debido a que la mayoría de los datos no seguían una tendencia linear, ni contaban con una correlación tan visible. 
+
+Considero que en estos datos existen las respuestas a la pregunta de investigación, sin embargo estas no fueron encontradas ya que no se emplearon las herramientas estadísticas necesarias. Al analizar los diagramas, sobre todo los de alcalinidad, calcio, y clorofila, me pude dar cuenta de que si existía cierto grado de correlación entre estos factores y la concentración de mercurio, el único problema es que no era una tendencia linear. Considero que empleando otro tipo de regresión, se puede encontrar un modelo que se ajuste mucho mejor a los datos, y se encuentre la respuesta a la pregunta de investigación. 
